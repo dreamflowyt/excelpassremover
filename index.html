@@ -3,9 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
     <title>Excel Password Remover</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Add SheetJS library with fallback -->
+    <script>
+        // Function to load script with fallback
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            script.onerror = function() {
+                console.error('Failed to load script:', src);
+                // Try the next source if available
+                if (window.scriptSources && window.scriptSources.length > 0) {
+                    loadScript(window.scriptSources.shift(), callback);
+                } else {
+                    // All sources failed
+                    document.getElementById('errorMessage').textContent = 'Error: Required library failed to load. Please refresh the page.';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.querySelector('.display').textContent = 'ERROR';
+                }
+            };
+            document.head.appendChild(script);
+        }
+
+        // Define script sources in order of preference
+        window.scriptSources = [
+            'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.1/xlsx.full.min.js',
+            'https://unpkg.com/xlsx@0.20.1/dist/xlsx.full.min.js'
+        ];
+
+        // Load the first script
+        loadScript(window.scriptSources.shift(), function() {
+            // Check if XLSX is loaded
+            if (typeof XLSX === 'undefined') {
+                console.error('XLSX library failed to load');
+                document.getElementById('errorMessage').textContent = 'Error: Required library failed to load. Please refresh the page.';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.querySelector('.display').textContent = 'ERROR';
+                return;
+            }
+            // Initialize the application
+            initializeApp();
+        });
+    </script>
     <style>
         :root {
             --primary-color: #ff5c00;
@@ -374,69 +416,6 @@
         View on GitHub
     </a>
 
-    <!-- Load msoffcrypto library -->
-    <script>
-        // Function to load script with retry
-        async function loadMsOffcryptoLibrary() {
-            const sources = [
-                'https://unpkg.com/msoffcrypto-tool@5.1.1/dist/msoffcrypto-tool.min.js',
-                'https://cdn.jsdelivr.net/npm/msoffcrypto-tool@5.1.1/dist/msoffcrypto-tool.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/msoffcrypto-tool/5.1.1/msoffcrypto-tool.min.js'
-            ];
-
-            for (const src of sources) {
-                try {
-                    const response = await fetch(src);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    const text = await response.text();
-                    
-                    // Create and execute script
-                    const script = document.createElement('script');
-                    script.textContent = text;
-                    document.head.appendChild(script);
-                    
-                    // Wait a moment to ensure the library is initialized
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                    // Check if library is loaded
-                    if (typeof msoffcrypto !== 'undefined') {
-                        console.log('Successfully loaded msoffcrypto from:', src);
-                        return true;
-                    }
-                } catch (err) {
-                    console.error('Failed to load from:', src, err);
-                }
-            }
-            return false;
-        }
-
-        // Initialize application
-        async function initializeApplication() {
-            const errorMessage = document.getElementById('errorMessage');
-            const display = document.querySelector('.display');
-
-            try {
-                const loaded = await loadMsOffcryptoLibrary();
-                if (!loaded) {
-                    throw new Error('Failed to load required library');
-                }
-                initializeApp(); // Start the main application
-            } catch (err) {
-                console.error('Initialization failed:', err);
-                errorMessage.textContent = 'Error: Required library failed to load. Please refresh the page or try a different browser.';
-                errorMessage.style.display = 'block';
-                display.textContent = 'ERROR';
-            }
-        }
-
-        // Start initialization when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApplication);
-        } else {
-            initializeApplication();
-        }
-    </script>
-
     <script>
         // Main application code
         function initializeApp() {
@@ -506,21 +485,33 @@
                 try {
                     // Read the file
                     const arrayBuffer = await file.arrayBuffer();
-                    const uint8Array = new Uint8Array(arrayBuffer);
                     
-                    // Create an OfficeFile object
-                    const officeFile = new msoffcrypto.OfficeFile(uint8Array);
+                    // Try to read the workbook with password
+                    const workbook = XLSX.read(arrayBuffer, {
+                        type: 'array',
+                        password: password,
+                        cellFormula: true,
+                        cellText: true
+                    });
                     
-                    // Create a memory stream for the decrypted file
-                    const decryptedStream = new Uint8Array();
+                    // Create a new workbook without password
+                    const newWorkbook = XLSX.utils.book_new();
                     
-                    // Decrypt the file with the provided password
-                    officeFile.loadKey(password);
-                    officeFile.decrypt(decryptedStream);
+                    // Copy each sheet to the new workbook
+                    workbook.SheetNames.forEach(sheetName => {
+                        const worksheet = workbook.Sheets[sheetName];
+                        XLSX.utils.book_append_sheet(newWorkbook, worksheet, sheetName);
+                    });
                     
-                    // Create a blob from the decrypted data
-                    const blob = new Blob([decryptedStream], {
-                        type: file.type
+                    // Generate the unprotected file
+                    const unprotectedFile = XLSX.write(newWorkbook, {
+                        bookType: 'xlsx',
+                        type: 'array'
+                    });
+                    
+                    // Create a blob from the unprotected data
+                    const blob = new Blob([unprotectedFile], {
+                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     });
                     
                     // Create download link
@@ -538,7 +529,7 @@
                     display.textContent = 'DONE';
                 } catch (err) {
                     console.error('Processing error:', err);
-                    errorMessage.textContent = err.message || 'An error occurred while removing the password';
+                    errorMessage.textContent = 'Failed to remove password. Please check if the password is correct.';
                     errorMessage.style.display = 'block';
                     display.textContent = 'ERROR';
                 } finally {
