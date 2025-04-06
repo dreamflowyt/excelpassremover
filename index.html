@@ -373,17 +373,72 @@
         View on GitHub
     </a>
 
-    <script src="https://cdn.jsdelivr.net/npm/msoffcrypto-tool@5.1.1/dist/msoffcrypto-tool.min.js"></script>
+    <!-- Load msoffcrypto library -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if msoffcrypto is loaded
-            if (typeof msoffcrypto === 'undefined') {
-                console.error('msoffcrypto library failed to load');
-                document.getElementById('errorMessage').textContent = 'Error: Required library failed to load. Please refresh the page.';
-                document.getElementById('errorMessage').style.display = 'block';
-                return;
+        // Function to load script with retry
+        async function loadMsOffcryptoLibrary() {
+            const sources = [
+                'https://unpkg.com/msoffcrypto-tool@5.1.1/dist/msoffcrypto-tool.min.js',
+                'https://cdn.jsdelivr.net/npm/msoffcrypto-tool@5.1.1/dist/msoffcrypto-tool.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/msoffcrypto-tool/5.1.1/msoffcrypto-tool.min.js'
+            ];
+
+            for (const src of sources) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = src;
+                        script.async = true;
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    
+                    // Wait a moment to ensure the library is initialized
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Check if library is loaded
+                    if (typeof msoffcrypto !== 'undefined') {
+                        console.log('Successfully loaded msoffcrypto from:', src);
+                        return true;
+                    }
+                } catch (err) {
+                    console.error('Failed to load from:', src, err);
+                }
             }
-            
+            return false;
+        }
+
+        // Initialize application
+        async function initializeApplication() {
+            const errorMessage = document.getElementById('errorMessage');
+            const display = document.querySelector('.display');
+
+            try {
+                const loaded = await loadMsOffcryptoLibrary();
+                if (!loaded) {
+                    throw new Error('Failed to load required library');
+                }
+                initializeApp(); // Start the main application
+            } catch (err) {
+                console.error('Initialization failed:', err);
+                errorMessage.textContent = 'Error: Required library failed to load. Please refresh the page or try a different browser.';
+                errorMessage.style.display = 'block';
+                display.textContent = 'ERROR';
+            }
+        }
+
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApplication);
+        } else {
+            initializeApplication();
+        }
+    </script>
+
+    <script>
+        // Main application code
+        function initializeApp() {
             const form = document.getElementById('passwordRemoverForm');
             const fileInput = document.getElementById('file');
             const fileInfo = document.getElementById('fileInfo');
@@ -481,6 +536,7 @@
                     successMessage.style.display = 'block';
                     display.textContent = 'DONE';
                 } catch (err) {
+                    console.error('Processing error:', err);
                     errorMessage.textContent = err.message || 'An error occurred while removing the password';
                     errorMessage.style.display = 'block';
                     display.textContent = 'ERROR';
@@ -491,7 +547,7 @@
                     loadingSpinner.style.display = 'none';
                 }
             });
-        });
+        }
     </script>
 </body>
 </html> 
