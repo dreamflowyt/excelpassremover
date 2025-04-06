@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Password Remover</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff5c00;
+            --primary-hover: #e64d00;
+            --secondary-color: #00a0e9;
+            --success-color: #00c853;
+            --error-color: #ff1744;
+            --background-color: #121212;
+            --card-background: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --border-color: #333333;
+            --grid-color: rgba(255, 92, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--background-color);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: var(--primary-color);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            font-family: 'Roboto Mono', monospace;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-wrapper input[type="file"]:hover {
+            border-color: var(--primary-color);
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: var(--text-primary);
+            border: none;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        button:hover::after {
+            transform: translateX(100%);
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideIn 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-error {
+            background-color: rgba(255, 23, 68, 0.1);
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+
+        .alert-success {
+            background-color: rgba(0, 200, 83, 0.1);
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .file-info {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .instructions {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .instructions h2 {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .instructions ol {
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .instructions li {
+            margin-bottom: 0.75rem;
+        }
+
+        .note {
+            margin-top: 1rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--text-primary);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .knob {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 8px;
+            background-color: var(--text-primary);
+            transform: translate(-50%, -50%);
+        }
+
+        .display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 60px;
+            height: 20px;
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            color: var(--primary-color);
+        }
+
+        .github-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .github-link:hover {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="display">READY</div>
+        <div class="knob"></div>
+        <h1>Excel Password Remover</h1>
+        
+        <form id="passwordRemoverForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Upload Password-Protected Excel File</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="file" name="file" accept=".xlsx,.xls">
+                </div>
+                <div id="fileInfo" class="file-info"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Excel File Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter the password for the Excel file">
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" id="submitBtn">
+                    <span class="loading-spinner" id="loadingSpinner"></span>
+                    <span id="buttonText">Remove Password & Download</span>
+                </button>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-error" style="display: none;"></div>
+            <div id="successMessage" class="alert alert-success" style="display: none;"></div>
+        </form>
+        
+        <div class="instructions">
+            <h2>How it works:</h2>
+            <ol>
+                <li>Upload your password-protected Excel file (.xlsx or .xls)</li>
+                <li>Enter the password that currently protects the file</li>
+                <li>Click the "Remove Password & Download" button</li>
+                <li>Download your Excel file without password protection</li>
+            </ol>
+            <p class="note">
+                <strong>Note:</strong> All processing happens in your browser. Your files and passwords are not sent to any server.
+            </p>
+        </div>
+    </div>
+
+    <a href="https://github.com/yourusername/excel-password-remover" class="github-link" target="_blank">
+        <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+        </svg>
+        View on GitHub
+    </a>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/msoffcrypto-tool/5.1.1/msoffcrypto-tool.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('passwordRemoverForm');
+            const fileInput = document.getElementById('file');
+            const fileInfo = document.getElementById('fileInfo');
+            const submitBtn = document.getElementById('submitBtn');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const display = document.querySelector('.display');
+            const knob = document.querySelector('.knob');
+
+            // Knob rotation effect
+            let knobRotation = 0;
+            knob.addEventListener('click', function() {
+                knobRotation += 90;
+                this.style.transform = `rotate(${knobRotation}deg)`;
+            });
+
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                        errorMessage.textContent = 'Please upload an Excel file (.xlsx or .xls)';
+                        errorMessage.style.display = 'block';
+                        fileInfo.textContent = '';
+                        fileInput.value = '';
+                        display.textContent = 'ERROR';
+                    } else {
+                        errorMessage.style.display = 'none';
+                        fileInfo.textContent = `Selected file: ${file.name}`;
+                        display.textContent = 'READY';
+                    }
+                }
+            });
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const file = fileInput.files[0];
+                const password = document.getElementById('password').value;
+                
+                if (!file) {
+                    errorMessage.textContent = 'Please select an Excel file';
+                    errorMessage.style.display = 'block';
+                    display.textContent = 'ERROR';
+                    return;
+                }
+                
+                if (!password) {
+                    errorMessage.textContent = 'Please enter the password';
+                    errorMessage.style.display = 'block';
+                    display.textContent = 'ERROR';
+                    return;
+                }
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                buttonText.textContent = 'Processing...';
+                loadingSpinner.style.display = 'block';
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                display.textContent = 'BUSY';
+                
+                try {
+                    // Read the file
+                    const arrayBuffer = await file.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    
+                    // Create an OfficeFile object
+                    const officeFile = new msoffcrypto.OfficeFile(uint8Array);
+                    
+                    // Create a memory stream for the decrypted file
+                    const decryptedStream = new Uint8Array();
+                    
+                    // Decrypt the file with the provided password
+                    officeFile.loadKey(password);
+                    officeFile.decrypt(decryptedStream);
+                    
+                    // Create a blob from the decrypted data
+                    const blob = new Blob([decryptedStream], {
+                        type: file.type
+                    });
+                    
+                    // Create download link
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `unprotected-${file.name}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    successMessage.textContent = 'Password removed successfully! File downloaded.';
+                    successMessage.style.display = 'block';
+                    display.textContent = 'DONE';
+                } catch (err) {
+                    errorMessage.textContent = err.message || 'An error occurred while removing the password';
+                    errorMessage.style.display = 'block';
+                    display.textContent = 'ERROR';
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    buttonText.textContent = 'Remove Password & Download';
+                    loadingSpinner.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
